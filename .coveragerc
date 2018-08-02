@@ -1,0 +1,8 @@
+[run]
+source = openprocurement.frameworkagreement.cfaua
+
+[report]
+omit =
+    *tests*
+    *.env*
+show_missing = True
