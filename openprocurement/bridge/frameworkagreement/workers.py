@@ -3,9 +3,11 @@ from gevent import monkey
 monkey.patch_all()
 
 import logging
+import os
 from datetime import datetime
 from gevent import Greenlet, sleep
 from gevent.queue import Empty
+from iso8601 import parse_date
 from openprocurement.bridge.basic.constants import PROCUREMENT_METHOD_TYPE_HANDLERS as handlers_registry
 from openprocurement.bridge.basic.interfaces import IWorker
 from openprocurement_client.exceptions import (
@@ -14,6 +16,7 @@ from openprocurement_client.exceptions import (
     ResourceNotFound,
     ResourceGone
 )
+from pytz import timezone
 from requests.exceptions import ConnectionError
 from time import time
 from zope.interface import implementer
@@ -23,6 +26,7 @@ from openprocurement.bridge.frameworkagreement.utils import journal_context
 
 logger = logging.getLogger(__name__)
 INFINITY = True
+TZ = timezone(os.environ['TZ'] if 'TZ' in os.environ else 'Europe/Kiev')
 
 
 @implementer(IWorker)
@@ -230,7 +234,7 @@ class AgreementWorker(Greenlet):
                                           {self.input_resource_id: resource_item['id']})
                 )
                 self.add_to_retry_queue(resource_item, priority)
- 
+
     def shutdown(self):
         self.exit = True
         logger.info('CloseFrameworkAgreement Worker complete his job.')
