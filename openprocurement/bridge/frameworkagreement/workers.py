@@ -212,12 +212,22 @@ class AgreementWorker(Greenlet):
                 sleep(self.config['worker_sleep'])
                 continue
 
+            handler = handlers_registry.get(resource_item['procurementMethodType'], '')
+            if not handler:
+                logger.critical(
+                    "Not found handler for procurementMethodType: {}, {} {}".format(
+                        resource_item['procurementMethodType'], self.resource[:-1], resource_item['id']
+                    ),
+                    extra=journal_context({"MESSAGE_ID": "bridge_worker_exception"},
+                                          {self.input_resource_id: resource_item['id']})
+                )
+                continue
+
             # Try get resource item from public server
             public_resource_item = self._get_resource_item_from_public(api_client_dict, priority, resource_item)
             if public_resource_item is None:
                 continue
 
-            handler = handlers_registry[resource_item['procurementMethodType']]
             try:
                 handler.process_resource(public_resource_item)
             except RequestFailed as e:
