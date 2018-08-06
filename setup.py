@@ -20,7 +20,8 @@ docs_requires = requires + [
 
 entry_points = {
     'openprocurement.bridge.basic.filter_plugins': [
-        'closeFrameworkAgreementUA = openprocurement.bridge.frameworkagreement.filters:CFAUAFilter'
+        'closeFrameworkAgreementUA = openprocurement.bridge.frameworkagreement.filters:CFAUAFilter',
+        'jmespath=openprocurement.bridge.frameworkagreement.filters:JMESPathFilter'
     ],
     'openprocurement.bridge.basic.worker_plugins': [
         'contracting = openprocurement.bridge.frameworkagreement.workers:AgreementWorker'

@@ -1,4 +1,6 @@
 main:
+  handlers:
+    - closeFrameworkAgreementUA
   worker_config:
     worker_type: ${options['worker_type']}
     client_inc_step_timeout: 0.1
@@ -26,13 +28,11 @@ main:
     bulk_query_interval: 3
     bulk_query_limit: 100
   filter_config:
-    filter_type: 'closeFrameworkAgreementUA'
-    procurementMethodTypes:
-      - "closeFrameworkAgreementUA"
-    statuses:
-      - "active.awarded"
-      - "complete"
-    lot_status: "active"
+    filter_type: jmespath
+    filters:
+      - {re: "contains([`closeFrameworkAgreementUA`], procurementMethodType)"}
+      - {re: "contains([`active.awarded`, `complete`], status)"}
+      - {re: "!lots || lots &&  contains(lots[].status, `active`)"}
     timeout: 3
   retrievers_params:
     down_requests_sleep: 5
