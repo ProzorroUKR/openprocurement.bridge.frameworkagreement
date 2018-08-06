@@ -99,7 +99,7 @@ class TestResourceAgreementWorker(unittest.TestCase):
         self.assertEqual(worker.cache_db, 'db')
         self.assertEqual(worker.config, {'bulk_save_limit': 1, 'bulk_save_interval': 1})
         self.assertEqual(worker.retry_resource_items_queue, 'retry_resource_items_queue')
-        self.assertEqual((worker.input_resource_id, worker.input_resource_id), ('TENDER_ID', 'TENDER_ID'))
+        self.assertEqual(worker.input_resource_id, 'TENDER_ID')
         self.assertEqual((worker.api_clients_info, worker.exit), (None, False))
 
     @patch('openprocurement.bridge.frameworkagreement.workers.logger')
@@ -549,9 +549,6 @@ class TestResourceAgreementWorker(unittest.TestCase):
 
         self.assertEquals(self.queue.empty(), True)
         self.assertEquals(self.retry_queue.empty(), True)
-
-
-
 
     @patch('openprocurement.bridge.frameworkagreement.workers.datetime')
     @patch('openprocurement.bridge.frameworkagreement.workers.logger')
