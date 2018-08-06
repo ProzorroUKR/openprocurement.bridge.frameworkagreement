@@ -25,7 +25,7 @@ entry_points = {
     'openprocurement.bridge.basic.worker_plugins': [
         'contracting = openprocurement.bridge.frameworkagreement.workers:AgreementWorker'
     ],
-    'openprocurement.bridge.contracting.handlers': [
+    'openprocurement.bridge.basic.handlers': [
         'closeFrameworkAgreementUA = openprocurement.bridge.frameworkagreement.handlers:AgreementObjectMaker'
     ]
 }
