@@ -6,6 +6,7 @@ version = '1.0.0'
 requires = [
     'setuptools',
     'openprocurement.bridge.basic',
+    'jmespath',
 ]
 
 test_requires = requires + [

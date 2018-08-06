@@ -84,7 +84,7 @@ class CFAUAFilter(Greenlet):
 class JMESPathFilter(Greenlet):
 
     def __init__(self, conf, input_queue, filtered_queue, db):
-        logger.info("Init Close Framework Agreement Filter.")
+        logger.info("Init Close Framework Agreement JMESPath Filter.")
         Greenlet.__init__(self)
         self.config = conf
         self.cache_db = db
@@ -92,7 +92,8 @@ class JMESPathFilter(Greenlet):
         self.filtered_queue = filtered_queue
         self.resource = self.config['resource']
         self.resource_id = "{}_ID".format(self.resource[:-1]).upper()
-        self.filters = [jmespath.complie(regex['re']) for regex in self.config['filter_config'].get('filters', [])]
+        self.filters = [jmespath.complie(expression['expression'])
+                        for expression in self.config['filter_config'].get('filters', [])]
         self.timeout = self.config['filter_config']['timeout']
 
     def _run(self):

@@ -30,9 +30,9 @@ main:
   filter_config:
     filter_type: jmespath
     filters:
-      - {re: "contains([`closeFrameworkAgreementUA`], procurementMethodType)"}
-      - {re: "contains([`active.awarded`, `complete`], status)"}
-      - {re: "!lots || lots &&  contains(lots[].status, `active`)"}
+      - {expression: "contains([`closeFrameworkAgreementUA`], procurementMethodType)"}
+      - {expression: "contains([`active.awarded`, `complete`], status)"}
+      - {expression: "!lots || lots &&  contains(lots[].status, `active`)"}
     timeout: 3
   retrievers_params:
     down_requests_sleep: 5
