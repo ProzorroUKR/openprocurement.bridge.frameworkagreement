@@ -217,7 +217,7 @@ class TestAgreementObjectMaker(unittest.TestCase):
         resource['dateModified'] = datetime.now()
         resource['agreements'] = [{'status': 'cancelled', 'id': '2' * 32}]
         handler.process_resource(resource)
-        self.assertIn(resource['id'], cache_db)
+        self.assertTrue(cache_db.has(resource['id']))
 
         # agreement exist in local db
         resource['id'] = '3' * 32
@@ -234,7 +234,7 @@ class TestAgreementObjectMaker(unittest.TestCase):
                 )
             ]
         )
-        self.assertIn(resource['id'], cache_db)
+        self.assertTrue(cache_db.has(resource['id']))
 
         # not in local db
         resource['id'] = '5' * 32
@@ -243,7 +243,7 @@ class TestAgreementObjectMaker(unittest.TestCase):
         handler.process_resource(resource)
 
         handler.public_output_client.get_resource_item.assert_called_with(resource['agreements'][0]['id'])
-        self.assertIn(resource['agreements'][0]['id'], cache_db)
+        self.assertTrue(cache_db.has(resource['agreements'][0]['id']))
         self.assertEquals(cache_db[resource['agreements'][0]['id']], True)
         self.assertEquals(
             mocked_logger.info.call_args_list[2:],
@@ -266,11 +266,11 @@ class TestAgreementObjectMaker(unittest.TestCase):
 
         handler.process_resource(resource)
 
-        self.assertIn(resource['id'], cache_db)
+        self.assertTrue(cache_db.has(resource['id']))
         self.assertEquals(cache_db[resource['id']], resource['dateModified'])
         handler.fill_agreement.assert_called_with(munchify(resource['agreements'][0]), munchify(resource))
         handler.post_agreement.assert_called_with(munchify(resource['agreements'][0]))
-        self.assertIn(resource['agreements'][0]['id'], cache_db)
+        self.assertTrue(cache_db.has(resource['agreements'][0]['id']))
         self.assertEquals(
             mocked_logger.info.call_args_list[3:],
             [
@@ -289,7 +289,7 @@ class TestAgreementObjectMaker(unittest.TestCase):
 
         handler.process_resource(resource)
 
-        self.assertIn(resource['id'], cache_db)
+        self.assertTrue(cache_db.has(resource['id']))
         self.assertEquals(cache_db[resource['id']], resource['dateModified'])
         self.assertEquals(
             mocked_logger.info.call_args_list[4:],
