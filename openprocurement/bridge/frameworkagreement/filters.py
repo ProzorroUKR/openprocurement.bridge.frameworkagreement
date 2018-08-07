@@ -92,7 +92,7 @@ class JMESPathFilter(Greenlet):
         self.filtered_queue = filtered_queue
         self.resource = self.config['resource']
         self.resource_id = "{}_ID".format(self.resource[:-1]).upper()
-        self.filters = [jmespath.complie(expression['expression'])
+        self.filters = [jmespath.compile(expression['expression'])
                         for expression in self.config['filter_config'].get('filters', [])]
         self.timeout = self.config['filter_config']['timeout']
 
