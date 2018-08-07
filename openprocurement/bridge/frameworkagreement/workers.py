@@ -42,7 +42,6 @@ class AgreementWorker(Greenlet):
         self.input_resource = self.main_config['resource']
         self.resource = self.main_config['resource']
         self.input_resource_id = "{}_ID".format(self.main_config['resource'][:-1]).upper()
-        self.output_resource_id = "{}_ID".format(self.main_config['resource'][:-1]).upper()
         self.api_clients_queue = api_clients_queue
         self.resource_items_queue = resource_items_queue
         self.retry_resource_items_queue = retry_resource_items_queue
