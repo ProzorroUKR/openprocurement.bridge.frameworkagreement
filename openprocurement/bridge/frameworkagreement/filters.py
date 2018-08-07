@@ -62,7 +62,7 @@ class CFAUAFilter(Greenlet):
 
             if resource['status'] not in self.statuses:
                 logger.info(
-                    "Skipping {} {} {}".format(resource['procurementMethodType'], self.resource[:-1],
+                    "Skipping {} {} {} {}".format(resource['procurementMethodType'], self.resource[:-1],
                                                resource['status'], resource['id']),
                     extra=journal_context({"MESSAGE_ID": "SKIPPED"}, params={self.resource_id: resource['id']})
                 )
