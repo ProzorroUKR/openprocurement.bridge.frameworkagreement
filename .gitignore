@@ -24,6 +24,8 @@ lib64
 *.egg-info/
 .installed.cfg
 *.egg
+.dappfile.render.yaml
+pip-selfcheck.json
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
