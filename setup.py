@@ -7,6 +7,7 @@ requires = [
     'setuptools',
     'openprocurement.bridge.basic',
     'jmespath',
+    'tooz',
 ]
 
 test_requires = requires + [
@@ -28,7 +29,8 @@ entry_points = {
         'contracting = openprocurement.bridge.frameworkagreement.workers:AgreementWorker'
     ],
     'openprocurement.bridge.basic.handlers': [
-        'closeFrameworkAgreementUA = openprocurement.bridge.frameworkagreement.handlers:AgreementObjectMaker'
+        'closeFrameworkAgreementUA = openprocurement.bridge.frameworkagreement.handlers:AgreementObjectMaker',
+        'closeFrameworkAgreementSelectionUA = openprocurement.bridge.frameworkagreement.handlers:CFASelectionUAHandler'
     ]
 }
 

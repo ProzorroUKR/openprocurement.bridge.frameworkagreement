@@ -10,6 +10,7 @@ from openprocurement_client.exceptions import (
 from openprocurement.bridge.basic.utils import DataBridgeConfigError
 from retrying import retry
 from uuid import uuid4
+from tooz import coordination
 
 from openprocurement.bridge.frameworkagreement.utils import journal_context, generate_req_id
 
@@ -57,20 +58,17 @@ CONFIG_MAPPING = {
 logger = logging.getLogger(__name__)
 
 
-class AgreementObjectMaker(object):
+class HandlerTemplate(object):
 
     def __init__(self, config, cache_db):
-        logger.info("Init Close Framework Agreement UA Handler.")
         self.cache_db = cache_db
-        self.handler_config = config['worker_config'].get('handler_cfaua', {})
+        self.handler_config = config['worker_config'].get(self.handler_name, {})
         self.main_config = config
         self.config_keys = ('resources_api_token', 'resources_api_version', 'input_resources_api_server',
                             'input_publice_resources_api_server', 'input_resource', 'output_resources_api_server',
                             'output_public_resources_api_server', 'output_resource')
         self.validate_and_fix_handler_config()
         self.initialize_clients()
-        self.basket = {}
-        self.keys_from_tender = ('procuringEntity', )
 
     def validate_and_fix_handler_config(self):
         for key in self.config_keys:
@@ -126,6 +124,21 @@ class AgreementObjectMaker(object):
                 logger.info('create_api_client will be sleep {} sec.'.format(timeout))
                 sleep(timeout)
 
+    def _put_resource_in_cache(self, resource):
+        date_modified = self.cache_db.get(resource['id'])
+        if not date_modified or date_modified < resource['dateModified']:
+            self.cache_db.put(resource['id'], resource['dateModified'])
+
+
+class AgreementObjectMaker(HandlerTemplate):
+
+    def __init__(self, config, cache_db):
+        logger.info("Init Close Framework Agreement UA Handler.")
+        self.handler_name = 'handler_cfaua'
+        super(AgreementObjectMaker, self).__init__(config, cache_db)
+        self.basket = {}
+        self.keys_from_tender = ('procuringEntity', )
+
     @retry(stop_max_attempt_number=3, wait_exponential_multiplier=1000)
     def get_resource_credentials(self, resource_id):
         self.input_client.headers.update({'X-Client-Request-ID': generate_req_id()})
@@ -152,11 +165,6 @@ class AgreementObjectMaker(object):
             agreement[key] = resource[key]
         if 'mode' in resource:
             agreement['mode'] = resource['mode']
-
-    def _put_resource_in_cache(self, resource):
-        date_modified = self.cache_db.get(resource['id'])
-        if not date_modified or date_modified < resource['dateModified']:
-            self.cache_db.put(resource['id'], resource['dateModified'])
 
     def post_agreement(self, agreement):
         data = {"data": agreement.toDict()}
@@ -214,3 +222,47 @@ class AgreementObjectMaker(object):
             self.post_agreement(agreement)
             self.cache_db.put(agreement['id'], True)
         self._put_resource_in_cache(resource)
+
+
+class CFASelectionUAHandler(HandlerTemplate):
+
+    def __init__(self, config, cache_db):
+        logger.info("init CFA Selection UA Handler.")
+        self.handler_name = 'handler_cfaselectionua'
+        super(CFASelectionUAHandler, self).__init__(config, cache_db)
+        coordinator_config = config.get('coordinator_config', {})
+        self.coordinator = coordination.get_coordinator(coordinator_config.get('connection_url', 'redis://'),
+                                                        coordinator_config.get('coordinator_name', 'bridge'))
+        self.coordinator.start(start_heart=True)
+
+    def process_resource(self, resource):
+        lock = self.coordinator.get_lock(resource['id'])
+        if lock._client.exists(lock._name):
+            logger.info(
+                "Tender {} processing by another worker.".format(resource['id']),
+                extra=journal_context({"MESSAGE_ID": 'tender_already_in_process'},
+                                      params={"TENDER_ID": resource['id']}))
+            return
+        with lock:
+            for agreement in resource['agreements']:
+                agreement_data = self.input_client.get_resource_item(agreement['id'])
+                logger.info(
+                    "Received agreement data {}".format(agreement['id']),
+                    extra=journal_context({"MESSAGE_ID": 'received_agreement_data'},
+                                          params={"TENDER_ID": resource['id'], "AGREEMENT_ID": agreement['id']}))
+                agreement_data['data'].pop('id')
+
+                # Fill agreement data
+                logger.info(
+                    "Patch tender agreement {}".format(agreement['id']),
+                    extra=journal_context({"MESSAGE_ID": 'patch_agreement_data'},
+                                          params={"TENDER_ID": resource['id'], "AGREEMENT_ID": agreement['id']}))
+                self.output_client.patch_resource_item_subitem(
+                    resource['id'], agreement_data, 'agreements', subitem_id=agreement['id']
+                )
+
+            # Swith tender status
+            logger.info(
+                "Switch tender {} status".format(resource['id']),
+                extra=journal_context({"MESSAGE_ID": 'patch_tender_status'}, params={"TENDER_ID": resource['id']}))
+            self.output_client.patch_resource_item(resource['id'], {'data': {'status': 'active.tendering'}})
