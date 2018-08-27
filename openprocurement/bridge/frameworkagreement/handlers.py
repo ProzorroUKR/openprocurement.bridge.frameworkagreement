@@ -265,4 +265,4 @@ class CFASelectionUAHandler(HandlerTemplate):
             logger.info(
                 "Switch tender {} status".format(resource['id']),
                 extra=journal_context({"MESSAGE_ID": 'patch_tender_status'}, params={"TENDER_ID": resource['id']}))
-            self.output_client.patch_resource_item(resource['id'], {'data': {'status': 'active.tendering'}})
+            self.output_client.patch_resource_item(resource['id'], {'data': {'status': 'active.enquiries'}})

@@ -13,7 +13,9 @@ from openprocurement_client.exceptions import (
 
 from openprocurement.bridge.basic.utils import DataBridgeConfigError
 from openprocurement.bridge.frameworkagreement.tests.base import AdaptiveCache
-from openprocurement.bridge.frameworkagreement.handlers import AgreementObjectMaker
+from openprocurement.bridge.frameworkagreement.handlers import (
+    AgreementObjectMaker, CFASelectionUAHandler
+)
 
 
 class TestAgreementObjectMaker(unittest.TestCase):
@@ -301,4 +303,103 @@ class TestAgreementObjectMaker(unittest.TestCase):
                            'JOURNAL_AGREEMENT_ID': resource['agreements'][0]['id']}
                 )
             ]
+        )
+
+
+class TestCFASelectionUAHandler(unittest.TestCase):
+    config = {'worker_config': {'handler_cfaselectionua': {
+        'resources_api_token': 'resources_api_token',
+        'resources_api_version': 'resources_api_version',
+        'input_resources_api_server': 'resources_api_server',
+        'input_publice_resources_api_server': 'public_resources_api_server',
+        'input_resource': 'resource',
+        'output_resources_api_server': 'resources_api_server',
+        'output_public_resources_api_server': 'public_resources_api_server',
+        'output_resource': 'output_resource'
+    }}}
+
+    @patch('openprocurement.bridge.frameworkagreement.handlers.coordination')
+    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
+    @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
+    def test_init(self, mocked_logger, mocked_client, mocked_coordination):
+        coordinator = MagicMock()
+        mocked_coordination.get_coordinator.return_value = coordinator
+        handler = CFASelectionUAHandler(self.config, 'cache_db')
+
+        self.assertEquals(handler.cache_db, 'cache_db')
+        self.assertEquals(handler.handler_config, self.config['worker_config']['handler_cfaselectionua'])
+        self.assertEquals(handler.main_config, self.config)
+        self.assertEqual(handler.coordinator, coordinator)
+        self.assertEquals(handler.config_keys,
+                          ('resources_api_token', 'resources_api_version', 'input_resources_api_server',
+                           'input_publice_resources_api_server', 'input_resource', 'output_resources_api_server',
+                           'output_public_resources_api_server', 'output_resource')
+                          )
+        mocked_logger.info.assert_called_once_with('init CFA Selection UA Handler.')
+        mocked_coordination.get_coordinator.assert_called_once_with('redis://', 'bridge')
+        coordinator.start.assert_called_once_with(start_heart=True)
+
+    @patch('openprocurement.bridge.frameworkagreement.handlers.coordination')
+    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
+    @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
+    def test_process_resource(self, mocked_logger, mocked_client, mocked_coordination):
+        lock = MagicMock()
+
+        coordinator = MagicMock()
+        coordinator.get_lock.return_value = lock
+
+        mocked_coordination.get_coordinator.return_value = coordinator
+        cache_db = AdaptiveCache({'0' * 32: datetime.now()})
+        handler = CFASelectionUAHandler(self.config, cache_db)
+
+        # test lock _client exists
+        resource = {'id': '0' * 32}
+        handler.process_resource(resource)
+        self.assertEquals(
+            mocked_logger.info.call_args_list[1:],
+            [
+                call(
+                    'Tender {} processing by another worker.'.format(resource['id']),
+                    extra={'JOURNAL_TENDER_ID': resource['id'],
+                           'MESSAGE_ID': 'tender_already_in_process'}
+                )
+            ]
+        )
+
+        # test actual process agreements
+        agreement = {'data': {'id': '1' * 32, 'status': 'draft.pending'}}
+        resource['agreements'] = [{'id': '1' * 32}]
+        lock._client.exists.return_value = False
+        handler.input_client.get_resource_item.return_value = agreement
+
+        handler.process_resource(resource)
+        self.assertEquals(
+            mocked_logger.info.call_args_list[2:],
+            [
+                call(
+                    'Received agreement data {}'.format(resource['agreements'][0]['id']),
+                    extra={'JOURNAL_TENDER_ID': resource['id'],
+                           'MESSAGE_ID': 'received_agreement_data',
+                           'JOURNAL_AGREEMENT_ID': resource['agreements'][0]['id']}
+                ),
+                call(
+                    'Patch tender agreement {}'.format(resource['agreements'][0]['id']),
+                    extra={'JOURNAL_TENDER_ID': resource['id'],
+                           'MESSAGE_ID': 'patch_agreement_data',
+                           'JOURNAL_AGREEMENT_ID': resource['agreements'][0]['id']}
+                ),
+                call(
+                    'Switch tender {} status'.format(resource['id']),
+                    extra={'JOURNAL_TENDER_ID': resource['id'],
+                           'MESSAGE_ID': 'patch_tender_status'}
+                ),
+            ]
+        )
+        handler.input_client.get_resource_item.assert_called_with(resource['agreements'][0]['id'])
+
+        handler.output_client.patch_resource_item_subitem.assert_called_with(
+            resource['id'], agreement, 'agreements', subitem_id=resource['agreements'][0]['id']
+        )
+        handler.output_client.patch_resource_item(
+            resource['id'], {'data': {'status': 'active.enquiries'}}
         )
