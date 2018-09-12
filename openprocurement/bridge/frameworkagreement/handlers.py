@@ -29,31 +29,36 @@ config = {
     'resources_api_token': '',
     'resources_api_version': '',
     'input_resources_api_server': '',
-    'input_publice_resources_api_server': '',
+    'input_public_resources_api_server': '',
     'input_resource': 'tenders',
     'output_resources_api_server': '',
     'output_public_resources_api_server': '',
     'output_resource': 'agreements',
     'handler_cfaua': {
         'resources_api_token': '',
+        'output_resources_api_token': 'agreement_token',
         'resources_api_version': '',
+        'input_resources_api_token': 'tender_token',
         'input_resources_api_server': '',
-        'input_publice_resources_api_server': '',
+        'input_public_resources_api_server': '',
         'input_resource': 'tenders',
         'output_resources_api_server': '',
         'output_public_resources_api_server': '',
         'output_resource': 'agreements'
     }
 }
+
 CONFIG_MAPPING = {
-    'resources_api_token': 'resources_api_token',
+    'input_resources_api_token': 'resources_api_token',
+    'output_resources_api_token': 'resources_api_token',
     'resources_api_version': 'resources_api_version',
     'input_resources_api_server': 'resources_api_server',
-    'input_publice_resources_api_server': 'public_resources_api_server',
+    'input_public_resources_api_server': 'public_resources_api_server',
     'input_resource': 'resource',
     'output_resources_api_server': 'resources_api_server',
     'output_public_resources_api_server': 'public_resources_api_server'
 }
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +69,8 @@ class HandlerTemplate(object):
         self.cache_db = cache_db
         self.handler_config = config['worker_config'].get(self.handler_name, {})
         self.main_config = config
-        self.config_keys = ('resources_api_token', 'resources_api_version', 'input_resources_api_server',
-                            'input_publice_resources_api_server', 'input_resource', 'output_resources_api_server',
+        self.config_keys = ('input_resources_api_token', 'output_resources_api_token', 'resources_api_version', 'input_resources_api_server',
+                            'input_public_resources_api_server', 'input_resource', 'output_resources_api_server',
                             'output_public_resources_api_server', 'output_resource')
         self.validate_and_fix_handler_config()
         self.initialize_clients()
@@ -95,20 +100,20 @@ class HandlerTemplate(object):
                     api_client = APIClient(host_url=self.handler_config['input_resources_api_server'],
                                            user_agent=client_user_agent,
                                            api_version=self.handler_config['resources_api_version'],
-                                           key=self.handler_config['resources_api_token'],
+                                           key=self.handler_config['input_resources_api_token'],
                                            resource=self.handler_config['input_resource'])
                 else:
                     if read_only:
                         api_client = APIClient(host_url=self.handler_config['output_public_resources_api_server'],
                                                user_agent=client_user_agent,
                                                api_version=self.handler_config['resources_api_version'],
-                                               key=self.handler_config['resources_api_token'],
+                                               key='',
                                                resource=self.handler_config['output_resource'])
                     else:
                         api_client = APIClient(host_url=self.handler_config['output_resources_api_server'],
                                                user_agent=client_user_agent,
                                                api_version=self.handler_config['resources_api_version'],
-                                               key=self.handler_config['resources_api_token'],
+                                               key=self.handler_config['output_resources_api_token'],
                                                resource=self.handler_config['output_resource'])
                 return api_client
             except RequestFailed as e:
