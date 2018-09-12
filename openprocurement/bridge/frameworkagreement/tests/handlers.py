@@ -20,10 +20,11 @@ from openprocurement.bridge.frameworkagreement.handlers import (
 
 class TestAgreementObjectMaker(unittest.TestCase):
     config = {'worker_config': {'handler_cfaua': {
-        'resources_api_token': 'resources_api_token',
+        'input_resources_api_token': 'resources_api_token',
+        'output_resources_api_token': 'resources_api_token',
         'resources_api_version': 'resources_api_version',
         'input_resources_api_server': 'resources_api_server',
-        'input_publice_resources_api_server': 'public_resources_api_server',
+        'input_public_resources_api_server': 'public_resources_api_server',
         'input_resource': 'resource',
         'output_resources_api_server': 'resources_api_server',
         'output_public_resources_api_server': 'public_resources_api_server',
@@ -34,13 +35,13 @@ class TestAgreementObjectMaker(unittest.TestCase):
     @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
     def test_init(self, mocked_logger, mocked_client):
         handler = AgreementObjectMaker(self.config, 'cache_db')
-
+        
         self.assertEquals(handler.cache_db, 'cache_db')
         self.assertEquals(handler.handler_config, self.config['worker_config']['handler_cfaua'])
         self.assertEquals(handler.main_config, self.config)
         self.assertEquals(handler.config_keys,
-                          ('resources_api_token', 'resources_api_version', 'input_resources_api_server',
-                           'input_publice_resources_api_server', 'input_resource', 'output_resources_api_server',
+                          ('input_resources_api_token', 'output_resources_api_token', 'resources_api_version', 'input_resources_api_server',
+                           'input_public_resources_api_server', 'input_resource', 'output_resources_api_server',
                            'output_public_resources_api_server', 'output_resource')
                           )
         self.assertEquals(handler.keys_from_tender, ('procuringEntity',))
@@ -308,10 +309,11 @@ class TestAgreementObjectMaker(unittest.TestCase):
 
 class TestCFASelectionUAHandler(unittest.TestCase):
     config = {'worker_config': {'handler_cfaselectionua': {
-        'resources_api_token': 'resources_api_token',
+        'input_resources_api_token': 'resources_api_token',
+        'output_resources_api_token': 'resources_api_token',
         'resources_api_version': 'resources_api_version',
         'input_resources_api_server': 'resources_api_server',
-        'input_publice_resources_api_server': 'public_resources_api_server',
+        'input_public_resources_api_server': 'public_resources_api_server',
         'input_resource': 'resource',
         'output_resources_api_server': 'resources_api_server',
         'output_public_resources_api_server': 'public_resources_api_server',
@@ -331,8 +333,8 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         self.assertEquals(handler.main_config, self.config)
         self.assertEqual(handler.coordinator, coordinator)
         self.assertEquals(handler.config_keys,
-                          ('resources_api_token', 'resources_api_version', 'input_resources_api_server',
-                           'input_publice_resources_api_server', 'input_resource', 'output_resources_api_server',
+                          ('input_resources_api_token', 'output_resources_api_token', 'resources_api_version', 'input_resources_api_server',
+                           'input_public_resources_api_server', 'input_resource', 'output_resources_api_server',
                            'output_public_resources_api_server', 'output_resource')
                           )
         mocked_logger.info.assert_called_once_with('init CFA Selection UA Handler.')
