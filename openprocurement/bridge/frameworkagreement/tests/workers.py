@@ -392,7 +392,7 @@ class TestResourceAgreementWorker(unittest.TestCase):
         self.assertEqual(self.queue.qsize(), 0)
         worker._run()
         self.assertEqual(self.queue.qsize(), 0)
-        mocked_logger.debug.assert_called_once_with(
+        mocked_logger.critical.assert_called_once_with(
             'API clients queue is empty.')
 
         # Try get item from resource items queue with no handler
@@ -405,6 +405,7 @@ class TestResourceAgreementWorker(unittest.TestCase):
         self.assertEqual(
             mocked_logger.critical.call_args_list,
             [
+                call('API clients queue is empty.'),
                 call(
                     'Not found handler for procurementMethodType: {}, {} {}'.format(
                         doc['id']['procurementMethodType'],
@@ -424,7 +425,7 @@ class TestResourceAgreementWorker(unittest.TestCase):
         mock_registry.return_value = {'closeFrameworkAgreementUA': handler_mock}
         worker._run()
         self.assertEqual(
-            mocked_logger.debug.call_args_list[3:],
+            mocked_logger.debug.call_args_list[2:],
             [
                 call(
                     'GET API CLIENT: {} {} with requests interval: {}'.format(
@@ -446,7 +447,7 @@ class TestResourceAgreementWorker(unittest.TestCase):
         worker.exit.__nonzero__.side_effect = [False, True]
         worker._run()
         self.assertEqual(
-            mocked_logger.debug.call_args_list[6:],
+            mocked_logger.debug.call_args_list[5:],
             [
                 call(
                     'GET API CLIENT: {} {} with requests interval: {}'.format(
@@ -468,7 +469,7 @@ class TestResourceAgreementWorker(unittest.TestCase):
         worker.exit.__nonzero__.side_effect = [False, True]
         worker._run()
         self.assertEqual(
-            mocked_logger.debug.call_args_list[8:],
+            mocked_logger.debug.call_args_list[7:],
             [
                 call(
                     'GET API CLIENT: {} {} with requests interval: {}'.format(
