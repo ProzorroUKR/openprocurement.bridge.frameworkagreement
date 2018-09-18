@@ -213,6 +213,7 @@ class AgreementWorker(Greenlet):
 
             handler = handlers_registry.get(resource_item['procurementMethodType'], '')
             if not handler:
+                self.api_clients_queue.put(api_client_dict)
                 logger.critical(
                     "Not found handler for procurementMethodType: {}, {} {}".format(
                         resource_item['procurementMethodType'], self.resource[:-1], resource_item['id']
