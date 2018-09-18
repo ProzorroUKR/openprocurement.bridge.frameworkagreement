@@ -198,7 +198,7 @@ class AgreementWorker(Greenlet):
             # Try get api client from clients queue
             api_client_dict = self._get_api_client_dict()
             if api_client_dict is None:
-                logger.debug('API clients queue is empty.')
+                logger.critical('API clients queue is empty.')
                 sleep(self.config['worker_sleep'])
                 continue
 
