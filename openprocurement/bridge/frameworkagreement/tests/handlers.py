@@ -369,10 +369,14 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         )
 
         # test actual process agreements
-        agreement = {'data': {'id': '1' * 32, 'status': 'draft.pending'}}
+        agreement = {'data': {'id': '1' * 32, 'status': 'active'}}
         resource['agreements'] = [{'id': '1' * 32}]
+        resource['status'] = 'active.enquires'
         lock._client.exists.return_value = False
         handler.input_client.get_resource_item.return_value = agreement
+        handler.output_client.patch_resource_item.return_value = {
+            'data': {'status': resource['status']}
+        }
 
         handler.process_resource(resource)
         self.assertEquals(
@@ -391,7 +395,7 @@ class TestCFASelectionUAHandler(unittest.TestCase):
                            'JOURNAL_AGREEMENT_ID': resource['agreements'][0]['id']}
                 ),
                 call(
-                    'Switch tender {} status'.format(resource['id']),
+                    'Switch tender {} status to {}'.format(resource['id'], resource['status']),
                     extra={'JOURNAL_TENDER_ID': resource['id'],
                            'MESSAGE_ID': 'patch_tender_status'}
                 ),

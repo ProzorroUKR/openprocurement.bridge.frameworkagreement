@@ -117,7 +117,8 @@ class TestResourceFilters(unittest.TestCase):
 
         doc = {
             'id': 'test_id',
-            'dateModified': '1970-01-01'
+            'dateModified': '1970-01-01',
+            'status': 'draft.pending'
         }
 
         self.input_queue.put((None, doc))
@@ -136,7 +137,7 @@ class TestResourceFilters(unittest.TestCase):
         infinity.__nonzero__.side_effect = [True, False]
         filter._run()
         mock_calls.append(
-            call.debug('Put to filtered queue {} test_id'.format(resource))
+            call.debug('Put to filtered queue {} test_id {}'.format(resource, doc['status']))
         )
         self.assertEqual(logger.mock_calls, mock_calls)
         priority, filtered_doc = self.filtered_queue.get()
@@ -160,7 +161,7 @@ class TestResourceFilters(unittest.TestCase):
         infinity.__nonzero__.side_effect = [True, False]
         filter._run()
         mock_calls.append(
-            call.debug('Put to filtered queue {} test_id'.format(resource))
+            call.debug('Put to filtered queue {} test_id {}'.format(resource, doc['status']))
         )
         self.assertEqual(logger.mock_calls, mock_calls)
         priority, filtered_doc = self.filtered_queue.get()
