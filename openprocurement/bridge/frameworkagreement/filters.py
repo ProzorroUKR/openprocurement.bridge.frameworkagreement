@@ -121,7 +121,9 @@ class JMESPathFilter(Greenlet):
                 else:
                     break
             else:
-                logger.debug("Put to filtered queue {} {}".format(self.resource[:-1], resource['id']))
+                logger.debug(
+                    "Put to filtered queue {} {} {}".format(self.resource[:-1], resource['id'], resource['status'])
+                )
                 self.filtered_queue.put((priority, resource))
                 continue
 

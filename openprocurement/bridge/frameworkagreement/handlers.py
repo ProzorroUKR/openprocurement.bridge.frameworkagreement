@@ -267,7 +267,7 @@ class CFASelectionUAHandler(HandlerTemplate):
                 )
 
             # Swith tender status
+            response = self.output_client.patch_resource_item(resource['id'], {'data': {'status': 'active.enquiries'}})
             logger.info(
-                "Switch tender {} status".format(resource['id']),
+                "Switch tender {} status to {}".format(resource['id'], response['data']['status']),
                 extra=journal_context({"MESSAGE_ID": 'patch_tender_status'}, params={"TENDER_ID": resource['id']}))
-            self.output_client.patch_resource_item(resource['id'], {'data': {'status': 'active.enquiries'}})
