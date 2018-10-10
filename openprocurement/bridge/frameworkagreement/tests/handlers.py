@@ -1,6 +1,5 @@
 import unittest
 
-from copy import deepcopy
 from datetime import datetime
 from mock import patch, MagicMock, call
 from munch import munchify
@@ -11,7 +10,6 @@ from openprocurement_client.exceptions import (
     ResourceGone
 )
 
-from openprocurement.bridge.basic.utils import DataBridgeConfigError
 from openprocurement.bridge.frameworkagreement.tests.base import AdaptiveCache
 from openprocurement.bridge.frameworkagreement.handlers import (
     AgreementObjectMaker, CFASelectionUAHandler
@@ -31,121 +29,24 @@ class TestAgreementObjectMaker(unittest.TestCase):
         'output_resource': 'output_resource'
     }}}
 
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
+    @patch('openprocurement.bridge.basic.handlers.APIClient')
     @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
     def test_init(self, mocked_logger, mocked_client):
         handler = AgreementObjectMaker(self.config, 'cache_db')
-        
+
         self.assertEquals(handler.cache_db, 'cache_db')
         self.assertEquals(handler.handler_config, self.config['worker_config']['handler_cfaua'])
         self.assertEquals(handler.main_config, self.config)
         self.assertEquals(handler.config_keys,
-                          ('input_resources_api_token', 'output_resources_api_token', 'resources_api_version', 'input_resources_api_server',
+                          ('input_resources_api_token', 'output_resources_api_token', 'resources_api_version',
+                           'input_resources_api_server',
                            'input_public_resources_api_server', 'input_resource', 'output_resources_api_server',
                            'output_public_resources_api_server', 'output_resource')
                           )
         self.assertEquals(handler.keys_from_tender, ('procuringEntity',))
         mocked_logger.info.assert_called_once_with('Init Close Framework Agreement UA Handler.')
 
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
-    @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
-    def test_validate_and_fix_handler_config(self, mocked_logger, mocked_client):
-        temp_comfig = deepcopy(self.config)
-        temp_comfig['resource'] = temp_comfig['worker_config']['handler_cfaua']['input_resource']
-        del temp_comfig['worker_config']['handler_cfaua']['input_resource']
-
-        handler = AgreementObjectMaker(temp_comfig, 'cache_db')
-
-        self.assertEquals(handler.handler_config['input_resource'], 'resource')
-
-        temp_comfig = deepcopy(self.config)
-        del temp_comfig['worker_config']['handler_cfaua']['output_resource']
-
-        with self.assertRaises(DataBridgeConfigError) as e:
-            handler = AgreementObjectMaker(temp_comfig, 'cache_db')
-            self.assertEquals(e.message, "Missing 'output_resource' in handler configuration.")
-
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
-    @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
-    def test_initialize_clients(self, mocked_logger, mocked_client):
-        handler = AgreementObjectMaker(self.config, 'cache_db')
-        self.assertEquals(isinstance(handler.output_client, MagicMock), True)
-        self.assertEquals(isinstance(handler.public_output_client, MagicMock), True)
-        self.assertEquals(isinstance(handler.input_client, MagicMock), True)
-
-    @patch('openprocurement.bridge.frameworkagreement.handlers.sleep')
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
-    @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
-    def test_create_api_client(self, mocked_logger, mocked_client, mocked_sleep):
-        handler = AgreementObjectMaker(self.config, 'cache_db')
-
-        # emulate RequestFailed
-        mocked_client.side_effect = (RequestFailed(),)
-        mocked_sleep.side_effect = (KeyboardInterrupt(),)
-
-        with self.assertRaises(KeyboardInterrupt) as e:
-            handler.create_api_client()
-        self.assertEquals(
-            mocked_logger.error.call_args_list,
-            [
-                call(
-                    'Failed start api_client with status code {}'.format(None),
-                    extra={'MESSAGE_ID': 'exceptions'}
-                )
-            ]
-        )
-        self.assertEquals(
-            mocked_logger.info.call_args_list[1:], [call('create_api_client will be sleep {} sec.'.format(0.2))]
-        )
-
-        # emulate Exception
-        mocked_client.side_effect = (Exception(),)
-        mocked_sleep.side_effect = (KeyboardInterrupt(),)
-
-        with self.assertRaises(KeyboardInterrupt) as e:
-            handler.create_api_client()
-        self.assertEquals(
-            mocked_logger.error.call_args_list[1:],
-            [
-                call(
-                    'Failed start api client with error: {}'.format(''),
-                    extra={'MESSAGE_ID': 'exceptions'}
-                )
-            ]
-        )
-        self.assertEquals(
-            mocked_logger.info.call_args_list[2:], [call('create_api_client will be sleep {} sec.'.format(0.2))]
-        )
-
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
-    @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
-    def test_get_resource_credentials(self, mocked_logger, mocked_client):
-        handler = AgreementObjectMaker(self.config, 'cache_db')
-
-        resource_id = 'resource_id'
-        result_data = {'owner': 'owner', 'tender_token': 'tender_token'}
-
-        input_mock = MagicMock()
-        input_mock.extract_credentials.return_value = result_data
-        handler.input_client = input_mock
-
-        result = handler.get_resource_credentials(resource_id)
-        self.assertEquals(result_data, result)
-        self.assertEquals(
-            mocked_logger.info.call_args_list[1:],
-            [
-                call(
-                    'Getting credentials for tender {}'.format(resource_id),
-                    extra={'MESSAGE_ID': 'databridge_get_credentials', 'JOURNAL_TENDER_ID': resource_id}
-                ),
-                call(
-                    'Got tender {} credentials'.format(resource_id),
-                    extra={'MESSAGE_ID': 'databridge_got_credentials', 'JOURNAL_TENDER_ID': resource_id}
-                )
-            ]
-        )
-
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
+    @patch('openprocurement.bridge.basic.handlers.APIClient')
     def test_fill_agreement(self, mocked_client):
         handler = AgreementObjectMaker(self.config, 'cache_db')
 
@@ -164,19 +65,7 @@ class TestAgreementObjectMaker(unittest.TestCase):
         self.assertEquals(agreement['owner'], credentials['data']['owner'])
         self.assertEquals(agreement['procuringEntity'], resource['procuringEntity'])
 
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
-    def test__put_resource_in_cache(self, mocked_client):
-        cache_db = AdaptiveCache({'0' * 32: datetime.now()})
-        handler = AgreementObjectMaker(self.config, cache_db)
-
-        new_date = datetime.now()
-        resource = {'id': '0' * 32, 'dateModified': new_date}
-
-        handler._put_resource_in_cache(resource)
-
-        self.assertEquals(cache_db.get(resource['id']), new_date)
-
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
+    @patch('openprocurement.bridge.basic.handlers.APIClient')
     @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
     def test_post_agreement(self, mocked_logger, mocked_client):
         handler = AgreementObjectMaker(self.config, 'cache_db')
@@ -196,7 +85,7 @@ class TestAgreementObjectMaker(unittest.TestCase):
         )
         handler.output_client.create_resource_item.assert_called_with({'data': agreement.toDict()})
 
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
+    @patch('openprocurement.bridge.basic.handlers.APIClient')
     @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
     def test_process_resource(self, mocked_logger, mocked_client):
         cache_db = AdaptiveCache({'0' * 32: datetime.now()})
@@ -321,7 +210,7 @@ class TestCFASelectionUAHandler(unittest.TestCase):
     }}}
 
     @patch('openprocurement.bridge.frameworkagreement.handlers.coordination')
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
+    @patch('openprocurement.bridge.basic.handlers.APIClient')
     @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
     def test_init(self, mocked_logger, mocked_client, mocked_coordination):
         coordinator = MagicMock()
@@ -333,7 +222,8 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         self.assertEquals(handler.main_config, self.config)
         self.assertEqual(handler.coordinator, coordinator)
         self.assertEquals(handler.config_keys,
-                          ('input_resources_api_token', 'output_resources_api_token', 'resources_api_version', 'input_resources_api_server',
+                          ('input_resources_api_token', 'output_resources_api_token', 'resources_api_version',
+                           'input_resources_api_server',
                            'input_public_resources_api_server', 'input_resource', 'output_resources_api_server',
                            'output_public_resources_api_server', 'output_resource')
                           )
@@ -342,7 +232,7 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         coordinator.start.assert_called_once_with(start_heart=True)
 
     @patch('openprocurement.bridge.frameworkagreement.handlers.coordination')
-    @patch('openprocurement.bridge.frameworkagreement.handlers.APIClient')
+    @patch('openprocurement.bridge.basic.handlers.APIClient')
     @patch('openprocurement.bridge.frameworkagreement.handlers.logger')
     def test_process_resource(self, mocked_logger, mocked_client, mocked_coordination):
         lock = MagicMock()
@@ -409,3 +299,14 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         handler.output_client.patch_resource_item(
             resource['id'], {'data': {'status': 'active.enquiries'}}
         )
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(TestAgreementObjectMaker))
+    suite.addTest(unittest.makeSuite(TestCFASelectionUAHandler))
+    return suite
+
+
+if __name__ == "__main__":
+    unittest.main(defaultTest='suite')
