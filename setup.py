@@ -6,7 +6,6 @@ version = '1.0.0'
 requires = [
     'setuptools',
     'openprocurement.bridge.basic',
-    'jmespath',
     'tooz',
 ]
 
@@ -23,10 +22,6 @@ docs_requires = requires + [
 entry_points = {
     'openprocurement.bridge.basic.filter_plugins': [
         'closeFrameworkAgreementUA = openprocurement.bridge.frameworkagreement.filters:CFAUAFilter',
-        'jmespath=openprocurement.bridge.frameworkagreement.filters:JMESPathFilter'
-    ],
-    'openprocurement.bridge.basic.worker_plugins': [
-        'contracting = openprocurement.bridge.frameworkagreement.workers:AgreementWorker'
     ],
     'openprocurement.bridge.basic.handlers': [
         'closeFrameworkAgreementUA = openprocurement.bridge.frameworkagreement.handlers:AgreementObjectMaker',

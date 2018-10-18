@@ -4,7 +4,6 @@ monkey.patch_all()
 
 import logging
 
-import jmespath
 from gevent import sleep
 from gevent.greenlet import Greenlet
 from gevent.queue import Empty
@@ -78,56 +77,3 @@ class CFAUAFilter(Greenlet):
 
             logger.debug("Put to filtered queue {} {}".format(self.resource[:-1], resource['id']))
             self.filtered_queue.put((priority, resource))
-
-
-@implementer(IFilter)
-class JMESPathFilter(Greenlet):
-
-    def __init__(self, conf, input_queue, filtered_queue, db):
-        logger.info("Init Close Framework Agreement JMESPath Filter.")
-        Greenlet.__init__(self)
-        self.config = conf
-        self.cache_db = db
-        self.input_queue = input_queue
-        self.filtered_queue = filtered_queue
-        self.resource = self.config['resource']
-        self.resource_id = "{}_ID".format(self.resource[:-1]).upper()
-        self.filters = [jmespath.compile(expression['expression'])
-                        for expression in self.config['filter_config'].get('filters', [])]
-        self.timeout = self.config['filter_config']['timeout']
-
-    def _run(self):
-        while INFINITY:
-            if not self.input_queue.empty():
-                priority, resource = self.input_queue.get()
-            else:
-                try:
-                    priority, resource = self.input_queue.get(timeout=self.timeout)
-                except Empty:
-                    sleep(self.timeout)
-                    continue
-
-            cached = self.cache_db.get(resource['id'])
-            if cached and cached == resource['dateModified']:
-                logger.info(
-                    "{} {} not modified from last check. Skipping".format(self.resource[:-1].title(), resource['id']),
-                    extra=journal_context({"MESSAGE_ID": "SKIPPED"}, params={self.resource_id: resource['id']})
-                )
-                continue
-
-            for re in self.filters:
-                if re.search(resource):
-                    continue
-                else:
-                    break
-            else:
-                logger.debug(
-                    "Put to filtered queue {} {} {}".format(self.resource[:-1], resource['id'], resource['status'])
-                )
-                self.filtered_queue.put((priority, resource))
-                continue
-
-            logger.info(
-                "Skip {} {}".format(self.resource[:-1], resource['id']), 
-                extra=journal_context({"MESSAGE_ID": "SKIPPED"}, params={self.resource_id: resource['id']})
-            )

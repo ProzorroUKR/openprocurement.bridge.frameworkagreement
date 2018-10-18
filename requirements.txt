@@ -6,7 +6,6 @@ circus==0.15.0
 circus-web==1.0.0
 collective.recipe.template==2.1
 elasticsearch==6.3.0
-jmespath == 0.9.3
 funcsigs == 1.0.2
 Genshi==0.7
 LazyDB==0.1.80
