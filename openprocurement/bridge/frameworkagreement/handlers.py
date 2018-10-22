@@ -162,7 +162,16 @@ class CFASelectionUAHandler(HandlerTemplate):
             return
         with lock:
             for agreement in resource['agreements']:
-                agreement_data = self.input_client.get_resource_item(agreement['id'])
+                try:
+                    agreement_data = self.input_client.get_resource_item(agreement['id'])
+                except ResourceNotFound:
+                    logger.info("Switch tender {} status to {}".format(resource['id'], 'draft.unsuccessful'),
+                                extra=journal_context({"MESSAGE_ID": 'patch_tender_status'},
+                                                      params={"TENDER_ID": resource['id']}))
+                    # Swith tender status
+                    response = self.output_client.patch_resource_item(resource['id'],
+                                                                      {'data': {'status': 'draft.unsuccessful'}})
+                    return
                 logger.info(
                     "Received agreement data {}".format(agreement['id']),
                     extra=journal_context({"MESSAGE_ID": 'received_agreement_data'},

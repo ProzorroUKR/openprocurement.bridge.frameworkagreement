@@ -5,7 +5,6 @@ from mock import patch, MagicMock, call
 from munch import munchify
 
 from openprocurement_client.exceptions import (
-    RequestFailed,
     ResourceNotFound,
     ResourceGone
 )
@@ -299,6 +298,31 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         handler.output_client.patch_resource_item(
             resource['id'], {'data': {'status': 'active.enquiries'}}
         )
+
+        # test invalid/doesnt exist agreement
+        resource = {'id': '1' * 32}
+        resource['agreements'] = [{'id': '1' * 32}]
+        resource['status'] = 'draft.unsuccessful'
+        lock._client.exists.return_value = False
+        e = ResourceNotFound()
+        handler.input_client.get_resource_item = MagicMock(side_effect=e)
+        handler.output_client.patch_resource_item.return_value = {
+            'data': {'status': resource['status']}
+        }
+
+        handler.process_resource(resource)
+        self.assertEquals(
+            mocked_logger.info.call_args_list[5:],
+            [
+                call(
+                    'Switch tender {} status to {}'.format(resource['id'], 'draft.unsuccessful'),
+                    extra={'JOURNAL_TENDER_ID': resource['id'],
+                           'MESSAGE_ID': 'patch_tender_status'}
+                )
+            ]
+        )
+        handler.output_client.patch_resource_item.called_with(resource['id'],
+                                                              {'data': {'status': 'draft.unsuccessful'}})
 
 
 def suite():
