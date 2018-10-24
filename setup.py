@@ -7,6 +7,7 @@ requires = [
     'setuptools',
     'openprocurement.bridge.basic',
     'tooz',
+    'retrying',
 ]
 
 test_requires = requires + [

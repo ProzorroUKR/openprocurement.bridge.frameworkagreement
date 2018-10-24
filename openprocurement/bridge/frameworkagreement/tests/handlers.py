@@ -305,7 +305,8 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         resource['status'] = 'draft.unsuccessful'
         lock._client.exists.return_value = False
         e = ResourceNotFound()
-        handler.input_client.get_resource_item = MagicMock(side_effect=e)
+        handler.input_client.get_resource_item = MagicMock()
+        handler.input_client.get_resource_item.side_effect = (e, e, e, resource)
         handler.output_client.patch_resource_item.return_value = {
             'data': {'status': resource['status']}
         }
@@ -323,6 +324,8 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         )
         handler.output_client.patch_resource_item.called_with(resource['id'],
                                                               {'data': {'status': 'draft.unsuccessful'}})
+        handler.input_client.get_resource_item.called_with(stop_max_attempt_number=3, wait_exponential_multiplier=1000)
+        self.assertEqual(len(handler.input_client.get_resource_item.call_args_list), 3)
 
 
 def suite():

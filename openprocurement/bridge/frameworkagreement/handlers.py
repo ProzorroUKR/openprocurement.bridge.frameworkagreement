@@ -7,6 +7,7 @@ from openprocurement_client.exceptions import (
     ResourceGone
 )
 
+from retrying import retry
 from tooz import coordination
 
 from openprocurement.bridge.basic.handlers import HandlerTemplate
@@ -152,6 +153,10 @@ class CFASelectionUAHandler(HandlerTemplate):
                                                         coordinator_config.get('coordinator_name', 'bridge'))
         self.coordinator.start(start_heart=True)
 
+    @retry(stop_max_attempt_number=3, wait_exponential_multiplier=1000)
+    def get_resource_item_with_retry(self, agreement_id):
+        return self.input_client.get_resource_item(agreement_id)
+
     def process_resource(self, resource):
         lock = self.coordinator.get_lock(resource['id'])
         if lock._client.exists(lock._name):
@@ -163,7 +168,7 @@ class CFASelectionUAHandler(HandlerTemplate):
         with lock:
             for agreement in resource['agreements']:
                 try:
-                    agreement_data = self.input_client.get_resource_item(agreement['id'])
+                    agreement_data = self.get_resource_item_with_retry(agreement['id'])
                 except ResourceNotFound:
                     logger.info("Switch tender {} status to {}".format(resource['id'], 'draft.unsuccessful'),
                                 extra=journal_context({"MESSAGE_ID": 'patch_tender_status'},
