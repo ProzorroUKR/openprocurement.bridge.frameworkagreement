@@ -1,8 +1,8 @@
 main:
   handlers:
-    - "closeFrameworkAgreementUA"
+    - closeFrameworkAgreementSelectionUA
   worker_config:
-    worker_type: 'contracting'
+    worker_type: ${options['worker_type']}
     client_inc_step_timeout: 0.1
     client_dec_step_timeout: 0.02
     drop_threshold_client_cookies: 2
@@ -12,10 +12,15 @@ main:
     queue_timeout: 2
     bulk_save_limit: 1
     bulk_save_interval: 0.5
-    handler_cfaua:
+    handler_cfaselectionua:
+      input_resource: 'agreements'
       output_resources_api_server: 'http://localhost:6543'
+      output_resources_api_token: 'fa_bot'
       output_public_resources_api_server: 'http://localhost:6543'
-      output_resource: 'agreements'
+      output_resource: 'tenders'
+  coordinator_config:
+    connection_url: 'redis://localhost:6379/2'
+    coordinator_name: 'bridge'
   storage_config:
     # required for databridge
     storage_type: "redis"  # possible values ['couchdb', 'elasticsearch', 'redis']
@@ -30,9 +35,8 @@ main:
   filter_config:
     filter_type: 'jmespath_filter'
     filters:
-      - {expression: "contains([`closeFrameworkAgreementUA`], procurementMethodType)"}
-      - {expression: "contains([`active.awarded`, `complete`], status)"}
-      - {expression: "!lots || lots &&  contains(lots[].status, `active`)"}
+      - {expression: "contains([`closeFrameworkAgreementSelectionUA`], procurementMethodType)"}
+      - {expression: "contains([`draft.pending`], status)"}
     timeout: 3
   retrievers_params:
     down_requests_sleep: 5
@@ -57,7 +61,7 @@ main:
   retry_workers_max: 2
   retry_resource_items_queue_size: -1
   watch_interval: 10
-  user_agent: 'bridge.contracting'
+  user_agent: 'bridge.cfaselectionua'
   resource_items_queue_size: 100
   input_queue_size: 100
   resource_items_limit: 100
@@ -76,11 +80,18 @@ handlers:
     formatter: simple
     stream: ext://sys.stdout
 
+{% if 'statsd' in options and options['statsd'] %}\
+  statsd:
+    level: DEBUG
+    class: statsdhandler.StatsdHandler
+    config_path: "${options['handler_config']}"
+{% end %}
+
 loggers:
   openprocurement.bridge.basic.databridge:
     handlers: [console]
-    level: INFO
+    level: DEBUG
     propagate: no
   "":
     handlers: [console]
-    level: INFO
+    level: DEBUG
