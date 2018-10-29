@@ -167,9 +167,15 @@ class CFASelectionUAHandler(HandlerTemplate):
             return
         with lock:
             for agreement in resource['agreements']:
+                if self.cache_db.has(resource['id']):
+                    logger.info("Skipped tender {}".format(resource['id']),
+                                extra=journal_context({"MESSAGE_ID": 'SKIPPED'},
+                                                      params={"TENDER_ID": resource['id']}))
+                    return
                 try:
                     agreement_data = self.get_resource_item_with_retry(agreement['id'])
                 except ResourceNotFound:
+                    self._put_resource_in_cache(resource)
                     logger.info("Switch tender {} status to {}".format(resource['id'], 'draft.unsuccessful'),
                                 extra=journal_context({"MESSAGE_ID": 'patch_tender_status'},
                                                       params={"TENDER_ID": resource['id']}))
@@ -194,6 +200,7 @@ class CFASelectionUAHandler(HandlerTemplate):
 
             # Swith tender status
             response = self.output_client.patch_resource_item(resource['id'], {'data': {'status': 'active.enquiries'}})
+            self._put_resource_in_cache(resource)
             logger.info(
                 "Switch tender {} status to {}".format(resource['id'], response['data']['status']),
                 extra=journal_context({"MESSAGE_ID": 'patch_tender_status'}, params={"TENDER_ID": resource['id']}))

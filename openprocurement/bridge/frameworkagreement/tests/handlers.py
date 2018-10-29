@@ -261,6 +261,8 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         agreement = {'data': {'id': '1' * 32, 'status': 'active'}}
         resource['agreements'] = [{'id': '1' * 32}]
         resource['status'] = 'active.enquires'
+        resource['id'] = '10' * 16
+        resource['dateModified'] = datetime.now()
         lock._client.exists.return_value = False
         handler.input_client.get_resource_item.return_value = agreement
         handler.output_client.patch_resource_item.return_value = {
@@ -300,9 +302,10 @@ class TestCFASelectionUAHandler(unittest.TestCase):
         )
 
         # test invalid/doesnt exist agreement
-        resource = {'id': '1' * 32}
-        resource['agreements'] = [{'id': '1' * 32}]
+        resource = {'id': '8' * 32}
+        resource['agreements'] = [{'id': '3' * 32}]
         resource['status'] = 'draft.unsuccessful'
+        resource['dateModified'] = datetime.now()
         lock._client.exists.return_value = False
         e = ResourceNotFound()
         handler.input_client.get_resource_item = MagicMock()
@@ -326,6 +329,30 @@ class TestCFASelectionUAHandler(unittest.TestCase):
                                                               {'data': {'status': 'draft.unsuccessful'}})
         handler.input_client.get_resource_item.called_with(stop_max_attempt_number=3, wait_exponential_multiplier=1000)
         self.assertEqual(len(handler.input_client.get_resource_item.call_args_list), 3)
+
+        # test the same tender and agreement '8' * 32 is already in cache
+        resource = {'id': '8' * 32}
+        resource['agreements'] = [{'id': '3' * 32}]
+        resource['status'] = 'draft.unsuccessful'
+        lock._client.exists.return_value = False
+        e = ResourceNotFound()
+        handler.input_client.get_resource_item = MagicMock()
+        handler.input_client.get_resource_item.side_effect = (e, e, e, resource)
+        handler.output_client.patch_resource_item.return_value = {
+            'data': {'status': resource['status']}
+        }
+
+        handler.process_resource(resource)
+        self.assertEquals(
+            mocked_logger.info.call_args_list[6:],
+            [
+                call(
+                    'Skipped tender {}'.format(resource['id']),
+                    extra={'JOURNAL_TENDER_ID': resource['id'],
+                           'MESSAGE_ID': 'SKIPPED'}
+                )
+            ]
+        )
 
 
 def suite():
