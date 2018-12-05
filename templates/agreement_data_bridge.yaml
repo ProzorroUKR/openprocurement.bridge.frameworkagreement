@@ -1,67 +1,128 @@
 main:
+  # список обробників зазвичай імя відповідає tender.procurementMethodType, можливі значення `closeFrameworkAgreementUA`
+  # і `closeFrameworkAgreementSelectionUA`
   handlers:
     - closeFrameworkAgreementUA
   worker_config:
+    # тип воркера може бути contracting для контрактингу і РУ або  edge цей ключ задає поведінку обробки
+    # для отриманих обєктів.
     worker_type: ${options['worker_type']}
+    # крок збільшення затримки між запитами клієнта якщо клієнт отримав HTTP:429
     client_inc_step_timeout: 0.1
+    # крок зменшення затримки між запитами клієнта якщо клієнт отримав HTTP:200
     client_dec_step_timeout: 0.02
+    # поріг для очищення куків клієнту, тобто якщо час затримки між запитами сягає 2 сек. то скинуться куки.
     drop_threshold_client_cookies: 2
+    # таймаут для воркера, якщо черга з обєктами пуста перед тим як повторити спробу потік зачекає 3 сек.
     worker_sleep: 3
+    # аналогічний таймаут для потоку який працює з чергою повторного опрацювання
     retry_default_timeout: 5
+    # максимальна к-ть попадань обєкта в чергу повторного опрацювання, тобто після 10 неуспішного разу опрацювати обєкт
+    # він вже не покладеться в чергу для повторного опрацювання, і запишеться в лог повідомлення що цей обєкт викинуто. 
     retries_count: 10
+    # таймаут черги, час який потрібно почекати воркеру на елемент в черзі
     queue_timeout: 2
+    # к-ть обєктів при зберігані
+    # ігнорується в контрактинг/РУ
     bulk_save_limit: 1
+    # час який накопичувати елементи для зберігання
+    # ігнорується в контрактинг/РУ
     bulk_save_interval: 0.5
+    # конфігурація для хендлера closeFrameworkAgreementUA
     handler_cfaua:
+      # АРІ сервер посилання на RW (main) точку
       output_resources_api_server: 'http://localhost:6543'
+      # АРІ сервер посилання на RO (public) точку
       output_public_resources_api_server: 'http://localhost:6543'
+      # назва контейнера для обєктів, для контактинг хендлерів значення може бути 'contracts'
       output_resource: 'agreements'
   storage_config:
     # required for databridge
+    # для контрактингу/РУ це значення може бути лише redis
     storage_type: "redis"  # possible values ['couchdb', 'elasticsearch', 'redis']
     # arguments for storage configuration
+    # хост для редісу
     cache_host: "localhost"
+    # порт редісу
     cache_port: 6379
     user: ""
     password: ""
+    # назва бази
     cache_db_name: "0"
+    # інтервал з яким накопичувати елементи для перевірки
+    # значення не враховується для типу контрактинг/РУ
     bulk_query_interval: 3
+    # к-ть елементів що перевіряються на існування
+    # ігнорується для контрактинг/РУ
     bulk_query_limit: 100
+  # Конфігурація для фільтру обєктів які будуть опрацьовуватись (задаються умови які мають бути істині)
   filter_config:
+    # тип фільтру може бути jmespath для контрактинг/РУ
     filter_type: jmespath
     filters:
       - {expression: "contains([`closeFrameworkAgreementUA`], procurementMethodType)"}
       - {expression: "contains([`active.awarded`, `complete`], status)"}
       - {expression: "!lots || lots &&  contains(lots[].status, `active`)"}
+    # таймаут який фільтр чекатиме на обєкт в черзі
     timeout: 3
+  # конфігурація для клієнту який слухає feed АРІ
   retrievers_params:
+    # інтервал між запитами потоку який рухається по історичних даних
     down_requests_sleep: 5
+    # інтервал між запитами потоку який рухається но нових даних
     up_requests_sleep: 1
+    # час який буде буде чекати потік якщо не отримає нових обєктів
     up_wait_sleep: 30
+    # розмір черги клієнта
     queue_size: 101
+  # додаткові параметри клієнта
   extra_params:
+      # тип обєктів _all_ означає всі включаючи тестові
       mode: "_all_"
+      # к-ть елементів на сторінці
       limit: 100
+      # які ще поля повертати у відповіді крім id, dateModified
       opt_fields: "status,lots,procurementMethodType"
+  # АРІ сервер RW (main)
   resources_api_server: 'http://localhost:6543'
+  # версія API
   resources_api_version: "2.4"
+  # Токен для здійсення операцій над обєктами
   resources_api_token: "contracting"
+  # Сервер публічного API RO (public)
   public_resources_api_server: 'http://localhost:6543'
+  # тип обєктів які слухати на feed'i можливі значення tenders, contracts, agreements, plans
   resource: 'tenders'
+  # Поріг заповнення основної черги після досягнення якого будуть стоврюватись нові потоки для розвантаження черги
   workers_inc_threshold: 75
+  # Поріг заповнення основної черги нижче якого буде зменшуватись к-ть потоків які працюють для розвантаження черги
   workers_dec_threshold: 35
+  # Мінімальна к-ть потоків
   workers_min: 1
+  # Максимальна к-ть потоків
   workers_max: 3
+  # К-ть потоків-фільтрів, на даний час допустиме значення лише 1
   filter_workers_count: 1
+  # Мінімальна к-ть потоків для роботи з чергою повторного опрацювання
   retry_workers_min: 1
+  # Максимальна к-ть потоків для з чергою повторного опрацювання 
   retry_workers_max: 2
+  # Розмір черги повторного опрацювання, -1 означає що обмежень по розміру немає
   retry_resource_items_queue_size: -1
+  # Інтервал з яким перевіряти роботу потоків та їх показників
   watch_interval: 10
+  # Назва для агенту щоб при навантаженнях на АРІ сервери можна було зідентифікувати джерело
   user_agent: 'bridge.contracting'
+  # Розмір основної черги, можливі значеня будь-яке позиитивне число або -1 якщо не потрібно обмежень на розмір черги
+  # Черга в якій містяться лише відфільтровані обєкти
   resource_items_queue_size: 100
+  # Розмір черги в яку попадать обєкти перед фільтруванням
   input_queue_size: 100
   resource_items_limit: 100
+  # Інтервал з яким моніторити заповення черг
   queues_controller_timeout: 60
+  # Вікно по якому визначається продуктивність клієнтів
+  # ігнорується в контрактинг/РУ
   perfomance_window: 300
 version: 1
 
