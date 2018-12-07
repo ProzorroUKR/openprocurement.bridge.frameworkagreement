@@ -31,9 +31,9 @@ main:
     # конфігурація для хендлера closeFrameworkAgreementUA
     handler_cfaua:
       # АРІ сервер посилання на RW (main) точку
-      output_resources_api_server: 'http://localhost:6543'
+      output_resources_api_server: ${options['output_resources_api_server']}
       # АРІ сервер посилання на RO (public) точку
-      output_public_resources_api_server: 'http://localhost:6543'
+      output_public_resources_api_server: ${options['output_public_resources_api_server']}
       # назва контейнера для обєктів, для контактинг хендлерів значення може бути 'contracts'
       output_resource: 'agreements'
   storage_config:
@@ -42,13 +42,13 @@ main:
     storage_type: "redis"  # possible values ['couchdb', 'elasticsearch', 'redis']
     # arguments for storage configuration
     # хост для редісу
-    cache_host: "localhost"
+    cache_host: ${options['storage_host']}
     # порт редісу
-    cache_port: 6379
+    cache_port: ${options['storage_port']}
     user: ""
     password: ""
     # назва бази
-    cache_db_name: "0"
+    cache_db_name: ${options['storage_db_name']}
     # інтервал з яким накопичувати елементи для перевірки
     # значення не враховується для типу контрактинг/РУ
     bulk_query_interval: 3
@@ -84,13 +84,13 @@ main:
       # які ще поля повертати у відповіді крім id, dateModified
       opt_fields: "status,lots,procurementMethodType"
   # АРІ сервер RW (main)
-  resources_api_server: 'http://localhost:6543'
+  resources_api_server: ${options['resources_api_server']}
   # версія API
   resources_api_version: "2.4"
   # Токен для здійсення операцій над обєктами
   resources_api_token: "contracting"
   # Сервер публічного API RO (public)
-  public_resources_api_server: 'http://localhost:6543'
+  public_resources_api_server: ${options['public_resources_api_server']}
   # тип обєктів які слухати на feed'i можливі значення tenders, contracts, agreements, plans
   resource: 'tenders'
   # Поріг заповнення основної черги після досягнення якого будуть стоврюватись нові потоки для розвантаження черги
