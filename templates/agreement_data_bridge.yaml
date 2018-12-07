@@ -88,7 +88,7 @@ main:
   # версія API
   resources_api_version: "2.4"
   # Токен для здійсення операцій над обєктами
-  resources_api_token: "contracting"
+  resources_api_token: ${options['resources_api_token']}
   # Сервер публічного API RO (public)
   public_resources_api_server: ${options['public_resources_api_server']}
   # тип обєктів які слухати на feed'i можливі значення tenders, contracts, agreements, plans

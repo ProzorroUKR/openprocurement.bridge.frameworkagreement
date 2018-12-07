@@ -49,7 +49,7 @@ main:
       opt_fields: "status,lots,procurementMethodType"
   resources_api_server: ${options['resources_api_server']}
   resources_api_version: "2.4"
-  resources_api_token: "contracting"
+  resources_api_token: ${options['resources_api_token']}
   public_resources_api_server: ${options['public_resources_api_server']}
   resource: 'tenders'
   workers_inc_threshold: 75
