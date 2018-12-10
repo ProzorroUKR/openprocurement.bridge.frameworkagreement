@@ -42,6 +42,7 @@ main:
     down_requests_sleep: 5
     up_requests_sleep: 1
     up_wait_sleep: 30
+    up_wait_sleep_min: 5
     queue_size: 101
   extra_params:
       mode: "_all_"
