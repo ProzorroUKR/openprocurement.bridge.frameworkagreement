@@ -32,6 +32,7 @@ main:
     handler_cfaua:
       # АРІ сервер посилання на RW (main) точку
       output_resources_api_server: ${options['output_resources_api_server']}
+      output_resources_api_token: ${options['output_resources_api_token']}
       # АРІ сервер посилання на RO (public) точку
       output_public_resources_api_server: ${options['output_public_resources_api_server']}
       # назва контейнера для обєктів, для контактинг хендлерів значення може бути 'contracts'
