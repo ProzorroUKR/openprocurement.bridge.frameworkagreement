@@ -81,6 +81,13 @@ handlers:
     formatter: simple
     stream: ext://sys.stdout
 
+{% if 'journal' in options and options['journal'] %}\
+  journal:
+    class: ExtendedJournalHandler.ExtendedJournalHandler
+    level: INFO
+    SYSLOG_IDENTIFIER: CFSELECTIONUA_DATA_BRIDGE
+{% end %}
+
 {% if 'statsd' in options and options['statsd'] %}\
   statsd:
     level: DEBUG
@@ -90,9 +97,9 @@ handlers:
 
 loggers:
   openprocurement.bridge.basic.databridge:
-    handlers: [console]
+    handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
     level: DEBUG
     propagate: no
   "":
-    handlers: [console]
+    handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
     level: DEBUG
