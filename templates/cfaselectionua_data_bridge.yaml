@@ -14,22 +14,22 @@ main:
     bulk_save_interval: 0.5
     handler_cfaselectionua:
       input_resource: 'agreements'
-      output_resources_api_server: 'http://localhost:6543'
-      output_resources_api_token: 'fa_bot'
-      output_public_resources_api_server: 'http://localhost:6543'
+      output_resources_api_server: ${options['output_resources_api_server']}
+      output_resources_api_token: ${options['output_resources_api_token']}
+      output_public_resources_api_server: ${options['output_public_resources_api_server']}
       output_resource: 'tenders'
   coordinator_config:
-    connection_url: 'redis://localhost:6379/2'
-    coordinator_name: 'bridge'
+    connection_url: ${options['coordinator_connection_url']}
+    coordinator_name: ${options['coordinator_name']}
   storage_config:
     # required for databridge
     storage_type: "redis"  # possible values ['couchdb', 'elasticsearch', 'redis']
     # arguments for storage configuration
-    cache_host: "localhost"
-    cache_port: 6379
+    cache_host: ${options['storage_host']}
+    cache_port: ${options['storage_port']}
     user: ""
     password: ""
-    cache_db_name: "0"
+    cache_db_name: ${options['storage_db_name']}
     bulk_query_interval: 3
     bulk_query_limit: 100
   filter_config:
@@ -42,15 +42,16 @@ main:
     down_requests_sleep: 5
     up_requests_sleep: 1
     up_wait_sleep: 30
+    up_wait_sleep_min: 5
     queue_size: 101
   extra_params:
       mode: "_all_"
       limit: 100
       opt_fields: "status,lots,procurementMethodType"
-  resources_api_server: 'http://localhost:6543'
+  resources_api_server: ${options['resources_api_server']}
   resources_api_version: "2.4"
-  resources_api_token: "contracting"
-  public_resources_api_server: 'http://localhost:6543'
+  resources_api_token: ${options['resources_api_token']}
+  public_resources_api_server: ${options['public_resources_api_server']}
   resource: 'tenders'
   workers_inc_threshold: 75
   workers_dec_threshold: 35
@@ -80,6 +81,13 @@ handlers:
     formatter: simple
     stream: ext://sys.stdout
 
+{% if 'journal' in options and options['journal'] %}\
+  journal:
+    class: ExtendedJournalHandler.ExtendedJournalHandler
+    level: INFO
+    SYSLOG_IDENTIFIER: CFSELECTIONUA_DATA_BRIDGE
+{% end %}
+
 {% if 'statsd' in options and options['statsd'] %}\
   statsd:
     level: DEBUG
@@ -89,9 +97,9 @@ handlers:
 
 loggers:
   openprocurement.bridge.basic.databridge:
-    handlers: [console]
+    handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
     level: DEBUG
     propagate: no
   "":
-    handlers: [console]
+    handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
     level: DEBUG
