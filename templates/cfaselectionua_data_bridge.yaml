@@ -102,12 +102,12 @@ loggers:
     propagate: no
   
   exc_logger:
-    handlers: [console,{',journal' if 'journal' in options and options['journal'] else ''}]
+    handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
     propagate: no
     level: ERROR
 
   openprocurement_client.resources.sync:
-    handlers: [console,{',journal' if 'journal' in options and options['journal'] else ''}]
+    handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
     propagate: no
     level: INFO
 
