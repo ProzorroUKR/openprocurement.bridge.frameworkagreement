@@ -159,6 +159,16 @@ loggers:
     propagate: no
     level: DEBUG
 
+  exc_logger:
+    handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
+    propagate: no
+    level: ERROR
+
+  openprocurement_client.resources.sync:
+    handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
+    propagate: no
+    level: INFO
+
   "":
     handlers: [console${',journal' if 'journal' in options and options['journal'] else ''}]
     level: DEBUG
