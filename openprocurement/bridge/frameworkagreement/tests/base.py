@@ -1,3 +1,9 @@
+import json
+import os
+
+PWD = os.path.dirname(os.path.realpath(__file__))
+
+
 class AdaptiveCache(object):
 
     def __init__(self, data):
@@ -17,3 +23,7 @@ class AdaptiveCache(object):
 
     def __contains__(self, item):
         return item in self.data
+
+
+with open(PWD + '/data/contract.json', 'r') as json_file:
+    TEST_CONTRACT = json.load(json_file)

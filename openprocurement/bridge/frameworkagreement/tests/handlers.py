@@ -1,5 +1,6 @@
 import unittest
 
+from copy import deepcopy
 from datetime import datetime
 from mock import patch, MagicMock, call
 from munch import munchify
@@ -9,7 +10,7 @@ from openprocurement_client.exceptions import (
     ResourceGone
 )
 
-from openprocurement.bridge.frameworkagreement.tests.base import AdaptiveCache
+from openprocurement.bridge.frameworkagreement.tests.base import AdaptiveCache, TEST_CONTRACT
 from openprocurement.bridge.frameworkagreement.handlers import (
     AgreementObjectMaker, CFASelectionUAHandler
 )
@@ -55,7 +56,12 @@ class TestAgreementObjectMaker(unittest.TestCase):
         handler.get_resource_credentials = credentials_mock
 
         resource = {'id': 'tender_id', 'mode': 'test', 'procuringEntity': 'procuringEntity'}
-        agreement = {}
+        agreement = {'contracts': []}
+        for x in range(4):
+            new_contract = deepcopy(TEST_CONTRACT)
+            agreement['contracts'].append(new_contract)
+        agreement['contracts'][-1]['status'] = u'unsuccessful'
+
         handler.fill_agreement(agreement, resource)
 
         self.assertEquals(agreement['agreementType'], 'cfaua')
@@ -63,6 +69,7 @@ class TestAgreementObjectMaker(unittest.TestCase):
         self.assertEquals(agreement['tender_token'], credentials['data']['tender_token'])
         self.assertEquals(agreement['owner'], credentials['data']['owner'])
         self.assertEquals(agreement['procuringEntity'], resource['procuringEntity'])
+        self.assertEquals(len(agreement['contracts']), 3)
 
     @patch('openprocurement.bridge.basic.handlers.APIClient')
     @patch('openprocurement.bridge.frameworkagreement.handlers.logger')

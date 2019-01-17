@@ -83,6 +83,7 @@ class AgreementObjectMaker(HandlerTemplate):
             agreement[key] = resource[key]
         if 'mode' in resource:
             agreement['mode'] = resource['mode']
+        agreement['contracts'] = [c for c in agreement['contracts'] if c['status'] == 'active']
 
     def post_agreement(self, agreement):
         data = {"data": agreement.toDict()}
